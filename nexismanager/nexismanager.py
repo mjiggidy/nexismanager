@@ -58,7 +58,7 @@ class WorkspaceManager:
 		ws = Workspace(
 			manager=self,
 			workspace=str(workspace),
-			mount=self.build_workspace_path(workspace),
+			mount_point=self.build_workspace_path(workspace),
 			read_only=bool(read_only)
 		)
 
@@ -112,12 +112,19 @@ class WorkspaceManager:
 
 @dataclasses.dataclass(frozen=True)
 class Workspace:
-	"""A Nexis Workspace"""
+	"""A mounted Nexis Workspace"""
 
 	manager:WorkspaceManager
+	"""The `WorkspaceManager` responsible for this workspace"""
+
 	workspace:str
-	mount:pathlib.Path
+	"""The name of this Nexis workspace"""
+
+	mount_point:pathlib.Path
+	"""The mount point in the filesystem for this workspace"""
+
 	read_only:bool
+	"""Indicates if the workspace is mounted as read only"""
 
 	def __enter__(self):
 		"""Context manager"""
