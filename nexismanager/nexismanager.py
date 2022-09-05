@@ -1,6 +1,7 @@
 import subprocess, pathlib, sys, dataclasses, typing
 
 class WorkspaceManager:
+	"""A manager for mounting, unmounting and keeping track of `_Workspace`s"""
 
 	def __init__(self, server:str, *, username:str, password:str, mount_root:str="/Volumes"):
 		"""Create a Nexis workspace manager"""
@@ -52,10 +53,10 @@ class WorkspaceManager:
 		
 		return path_candidate
 
-	def mount(self, workspace:str, read_only:bool=True) -> "Workspace":
+	def mount(self, workspace:str, read_only:bool=True) -> "_Workspace":
 		"""Mount a workspace"""
 
-		ws = Workspace(
+		ws = _Workspace(
 			manager=self,
 			workspace=str(workspace),
 			mount_point=self.build_workspace_path(workspace),
@@ -65,7 +66,7 @@ class WorkspaceManager:
 		self._mount_workspace(ws)
 		return ws
 	
-	def _mount_workspace(self, ws:"Workspace"):
+	def _mount_workspace(self, ws:"_Workspace"):
 		"""Actually mount a workspace"""
 
 		if ws in self._mounts:
@@ -79,39 +80,39 @@ class WorkspaceManager:
 			*options,
 			f"-U", f"{self.__credentials.get('username')}:{self.__credentials.get('password')}",
 			f"{self.__credentials.get('server')}:{ws.workspace}",
-			str(ws.mount)
+			str(ws.mount_point)
 		]
 
 		proc = subprocess.run(cmd_mount, capture_output=True)
-		if proc.returncode != 0 or not ws.mount.is_mount():
-			raise OSError(f"Could not mount {ws.workspace} to {ws.mount} (Err {proc.returncode}: {proc.stderr.decode('latin-1').strip()})")
+		if proc.returncode != 0 or not ws.mount_point.is_mount():
+			raise OSError(f"Could not mount {ws.workspace} to {ws.mount_point} (Err {proc.returncode}: {proc.stderr.decode('latin-1').strip()})")
 		
 		self._mounts.add(ws)
 
-	def _unmount_workspace(self, ws:"Workspace"):
+	def _unmount_workspace(self, ws:"_Workspace"):
 		"""Actually unmount a workspace"""
 
 		if ws not in self._mounts:
 			raise ValueError(f"This workspace is not managed by this workspace manager")
 		
-		if not ws.mount.is_mount():
+		if not ws.mount_point.is_mount():
 			print(f"Already unmounted: {ws}", file=sys.stderr)
 			self._mounts.remove(ws)
 			return
 
 		cmd_unmount = [
 			"umount",
-			str(ws.mount)
+			str(ws.mount_point)
 		]
 		proc = subprocess.run(cmd_unmount, capture_output=True)
 		
-		if proc.returncode != 0 or ws.mount.is_mount():
-			raise OSError(f"Could not unmount {ws.workspace} from {ws.mount} (Err {proc.returncode}: {proc.stderr.decode('latin-1').strip()})")
+		if proc.returncode != 0 or ws.mount_point.is_mount():
+			raise OSError(f"Could not unmount {ws.workspace} from {ws.mount_point} (Err {proc.returncode}: {proc.stderr.decode('latin-1').strip()})")
 		else:
 			self._mounts.remove(ws)
 
 @dataclasses.dataclass(frozen=True)
-class Workspace:
+class _Workspace:
 	"""A mounted Nexis Workspace"""
 
 	manager:WorkspaceManager
