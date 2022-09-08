@@ -1,5 +1,8 @@
 import subprocess, pathlib, sys, dataclasses, typing
 
+# TODO: Put this somewhere nicer and fancier
+PATH_MOUNT_AVID = "/usr/local/bin/mount_avid"
+
 class WorkspaceManager:
 	"""A manager for mounting, unmounting and keeping track of `_Workspace`s"""
 
@@ -76,7 +79,7 @@ class WorkspaceManager:
 		options = ["-o","rdonly"] if ws.read_only else []
 
 		cmd_mount = [
-			"mount_avid",
+			PATH_MOUNT_AVID,
 			*options,
 			f"-U", f"{self.__credentials.get('username')}:{self.__credentials.get('password')}",
 			f"{self.__credentials.get('server')}:{ws.workspace}",
@@ -126,6 +129,12 @@ class _Workspace:
 
 	read_only:bool
 	"""Indicates if the workspace is mounted as read only"""
+
+	@property
+	def name(self) -> str:
+		"""The name of this Nexis workspace"""
+		# TODO: I like this better than the `workspace` property... need to change
+		return self.workspace
 
 	def __enter__(self):
 		"""Context manager"""
