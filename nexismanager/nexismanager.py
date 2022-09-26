@@ -27,7 +27,8 @@ class WorkspaceManager:
 	def __del__(self):
 		"""Clean up stray mounts"""
 		
-		for ws in self._mounts:
+		# Copy to list to avoid RuntimeError: Set changed size during iteration
+		for ws in list(self._mounts):
 			print(f"Unmounting stray workspace {ws}...", file=sys.stderr)
 			self._unmount_workspace(ws)
 	
@@ -69,10 +70,11 @@ class WorkspaceManager:
 		self._mount_workspace(ws)
 		return ws
 	
-	def _mount_workspace(self, ws:"_Workspace"):
+	def _mount_workspace(self, ws:"_Workspace", recycle:bool=False):
 		"""Actually mount a workspace"""
 
-		if ws in self._mounts:
+		# TODO: Need to work out stale mount issue
+		if recycle and ws in self._mounts:
 			print(f"Already mounted: {ws}", file=sys.stderr)
 			return
 
@@ -110,6 +112,7 @@ class WorkspaceManager:
 		proc = subprocess.run(cmd_unmount, capture_output=True)
 		
 		if proc.returncode != 0 or ws.mount_point.is_mount():
+			self._mounts.remove(ws)
 			raise OSError(f"Could not unmount {ws.workspace} from {ws.mount_point} (Err {proc.returncode}: {proc.stderr.decode('latin-1').strip()})")
 		else:
 			self._mounts.remove(ws)
